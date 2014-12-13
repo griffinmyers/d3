@@ -4,7 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>d3</title>
 
-    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="bower_components/d3/d3.js" charset="utf-8"></script>
+    <script src="bower_components/lodash/dist/lodash.js" charset="utf-8"></script>
 
     <style type="text/css">
       .node rect {
@@ -46,9 +47,43 @@
       .append('g')
       .attr('transform', 'translate(60, 0)');
 
-    d3.json("nodes.json", function(error, root) {
-      var nodes = cluster.nodes(root);
-      var links = cluster.links(nodes);
+    d3.json("multi.json", function(error, n) {
+
+      function parse_nodes(r, n, used_children) {
+        if(_.isUndefined(used_children)) {
+          used_children = {}
+        }
+
+        if(_.has(r, 'original_children')) {
+          r.children = _.reduce(r.original_children, function(agg, c) {
+            if(_.isUndefined(used_children[c])) {
+              used_children[c] = used_children[c] + 1 || 1;
+              return agg.concat(parse_nodes(n.nodes[c], n, used_children));
+            }
+
+            return agg;
+          }, []);
+        }
+
+        return r;
+      }
+
+      function parse_links(r, n, agg) {
+        if(_.isUndefined(agg)) {
+          agg = [];
+        }
+
+        if(_.has(r, 'original_children')) {
+          return _.flatten(agg.concat(_.map(r.original_children, function(c) {
+            return parse_links(n.nodes[c], n, agg).concat({source: r, target: n.nodes[c]});
+          })));
+        }
+
+        return agg;
+      }
+
+      var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
+      var links = parse_links(n.nodes[0], n);
 
       var link = svg.selectAll('.link')
         .data(links)

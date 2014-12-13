@@ -1,0 +1,16 @@
+{
+  "nodes": {
+    "0": {"name": "sharma", "parents": null, "original_children": ["1", "2", "3", "9", "5"]},
+    "1": {"name": "ondra", "parents": ["0"], "original_children": ["3", "5"]},
+    "2": {"name": "woods", "parents": ["0"], "original_children": ["4"]},
+    "3": {"name": "caldwell", "parents": ["0", "1"], "original_children": ["6", "7", "8"]},
+    "4": {"name": "jorgensen", "parents": ["2"]},
+    "5": {"name": "bisharat", "parents": ["1", "0"]},
+    "6": {"name": "classen", "parents": ["3", "8"]},
+    "7": {"name": "graham", "parents": ["3"]},
+    "8": {"name": "robinson", "parents": ["3"], "original_children": ["10", "6"]},
+    "9": {"name": "siegriest", "parents": ["0"], "original_children": ["11"]},
+    "10": {"name": "cardwell", "parents": ["8"]},
+    "11": {"name": "andrada", "parents": ["9"]}
+  }
+}

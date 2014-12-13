@@ -5,6 +5,7 @@ Some experiments 4 work.
 #### running
 
 ```bash
+bower install
 python -m SimpleHTTPServer
 ```
 
