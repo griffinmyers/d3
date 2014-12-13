@@ -28,7 +28,7 @@
   </head>
 <body>
 
-  <div id="nodes" style="width:100%; height:900px"/>
+  <div id="nodes" style="width:100%; height:500px"/>
 
   <script type="text/javascript">
 
@@ -36,16 +36,16 @@
     var height = document.getElementById('nodes').clientHeight;
 
     var cluster = d3.layout.cluster()
-      .size([height - 100, width - 200]);
+      .size([width - 100, height - 200]);
 
     var diagonal = d3.svg.diagonal()
-      .projection(function(d) { return [d.y, d.x] });
+      .projection(function(d) { return [d.x, d.y] });
 
     var svg = d3.select('#nodes').append('svg')
       .attr('height', height)
       .attr('width', width)
       .append('g')
-      .attr('transform', 'translate(60, 0)');
+      .attr('transform', 'translate(0, 60)');
 
     d3.json("multi.json", function(error, n) {
 
@@ -95,7 +95,7 @@
         .data(nodes)
         .enter().append('g')
         .attr('class', 'node')
-        .attr('transform', function(d) { return 'translate(' + d.y + ', ' + d.x + ')'; });
+        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
 
       node.append('rect')
         .attr('width', 100)
