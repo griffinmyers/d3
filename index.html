@@ -7,10 +7,10 @@
     <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
     <style type="text/css">
-      .node circle {
+      .node rect {
         fill: #fff;
         stroke: steelblue;
-        stroke-width: 1.5px;
+        stroke-width: 1px;
       }
 
       .node {
@@ -27,7 +27,7 @@
   </head>
 <body>
 
-  <div id="nodes" style="width:1000px; height:500px"/>
+  <div id="nodes" style="width:100%; height:900px"/>
 
   <script type="text/javascript">
 
@@ -35,16 +35,16 @@
     var height = document.getElementById('nodes').clientHeight;
 
     var cluster = d3.layout.cluster()
-      .size([width - 100, height - 100]);
+      .size([height - 100, width - 200]);
 
     var diagonal = d3.svg.diagonal()
-      .projection(function(d) { return [d.x, d.y] });
+      .projection(function(d) { return [d.y, d.x] });
 
     var svg = d3.select('#nodes').append('svg')
       .attr('height', height)
       .attr('width', width)
       .append('g')
-      .attr('transform', 'translate(0, 40)');
+      .attr('transform', 'translate(60, 0)');
 
     d3.json("nodes.json", function(error, root) {
       var nodes = cluster.nodes(root);
@@ -60,16 +60,17 @@
         .data(nodes)
         .enter().append('g')
         .attr('class', 'node')
-        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+        .attr('transform', function(d) { return 'translate(' + d.y + ', ' + d.x + ')'; });
 
-      node.append('circle')
-        .attr('r', 4.5);
+      node.append('rect')
+        .attr('width', 100)
+        .attr('height', 20)
+        .attr('transform', 'translate(-50, -15)');
 
       node.append('text')
-        .attr('dx', function(d) { return d.children ? -8 : 8 })
-        .attr('dy', 3)
-        .style('text-anchor', function(d) { return d.children ? 'end' : 'start' })
-        .attr('transform', function(d) { return d.children ? '' : 'rotate(30) translate(0, 10)' })
+        .attr('dx', 0)
+        .attr('dy', -1)
+        .style('text-anchor', 'middle')
         .text(function(d) { return d.name; });
     });
 
