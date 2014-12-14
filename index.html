@@ -48,167 +48,171 @@
       .append('g')
       .attr('transform', 'translate(0, 30)');
 
-    d3.json("multi.json", function(error, n) {
-
-      function parse_nodes(r, n, used_children) {
-        if(_.isUndefined(used_children)) {
-          used_children = {}
-        }
-
-        if(_.has(r, 'original_children')) {
-          r.children = _.reduce(r.original_children, function(agg, c) {
-            if(_.isUndefined(used_children[c])) {
-              used_children[c] = used_children[c] + 1 || 1;
-              return agg.concat(parse_nodes(n.nodes[c], n, used_children));
-            }
-
-            return agg;
-          }, []);
-        }
-
-        return r;
+    function parse_nodes(r, n, used_children) {
+      if(_.isUndefined(used_children)) {
+        used_children = {}
       }
 
-      function parse_links(r, n, agg) {
-        if(_.isUndefined(agg)) {
-          agg = [];
-        }
+      var node = n.nodes[r]
 
-        if(_.has(r, 'original_children')) {
-          return _.flatten(agg.concat(_.map(r.original_children, function(c) {
-            return parse_links(n.nodes[c], n, agg).concat({source: r, target: n.nodes[c]});
-          })));
-        }
+      if(_.has(node, 'original_children')) {
+        node.children = _.reduce(node.original_children, function(agg, c) {
+          if(_.isUndefined(used_children[c])) {
+            used_children[c] = true;
+            return agg.concat(parse_nodes(c, n, used_children));
+          }
 
-        return agg;
+          return agg;
+        }, []);
       }
 
-      function links_in_root_paths(node, n, agg) {
-        if(_.isUndefined(agg)) {
-          agg = [];
-        }
+      return n.nodes[r];
+    }
 
-        if(!_.isNull(node, 'parents')) {
-          return _.flatten(agg.concat(_.map(node.parents, function(p) {
-            return links_in_root_paths(n.nodes[p], n, agg).concat({source_id: p, target_id: node.id});
-          })));
-        }
-
-        return agg;
+    function parse_links(r, n, agg) {
+      if(_.isUndefined(agg)) {
+        agg = [];
       }
 
-      function on_mouseover(node) {
-        svg.selectAll('.link')
-          .attr('style', function(link) {
-            var root_paths = _.indexBy(links_in_root_paths(node, n), function(l) { return l.source_id + '|' + l.target_id} )
-            if(_.has(root_paths, link.source.id + '|' + link.target.id)) {
-              return 'stroke: #2ecc71;';
-            }
-            else {
-              return 'opacity: 0.1;';
-            }
-          });
-
-        d3.event.stopPropagation();
+      if(_.has(n.nodes[r], 'original_children')) {
+        return _.flatten(agg.concat(_.map(n.nodes[r].original_children, function(c) {
+          return parse_links(c, n, agg).concat({source: n.nodes[r], target: n.nodes[c]});
+        })));
       }
 
-      function on_mouseout(node) {
-        svg.selectAll('.link')
-          .attr('style', 'stroke: #7f8c8d; opacity: 1');
+      return agg;
+    }
+
+    function links_in_root_paths(node, n, agg) {
+      if(_.isUndefined(agg)) {
+        agg = [];
       }
 
-      function on_click(node) {
-        _.forEach(node.parents || [], function(p) {
-          n.nodes[p].original_children = _.without(n.nodes[p].original_children, node.id);
-          _.forEach(node.original_children || [], function (c) {
-            n.nodes[p].original_children = n.nodes[p].original_children.concat(c);
-            n.nodes[c].parents = _.without(n.nodes[c].parents, node.id).concat(p);
-          });
+      if(!_.isNull(node, 'parents')) {
+        return _.flatten(agg.concat(_.map(node.parents, function(p) {
+          return links_in_root_paths(n.nodes[p], n, agg).concat({source_id: p, target_id: node.id});
+        })));
+      }
+
+      return agg;
+    }
+
+    function on_mouseover(n, node) {
+      svg.selectAll('.link')
+        .attr('style', function(link) {
+          var root_paths = _.indexBy(links_in_root_paths(node, n), function(l) { return l.source_id + '|' + l.target_id} )
+          if(_.has(root_paths, link.source.id + '|' + link.target.id)) {
+            return 'stroke: #2ecc71;';
+          }
+          else {
+            return 'opacity: 0.1;';
+          }
         });
 
-        delete n.nodes[node.id];
-        rerender(n);
+      d3.event.stopPropagation();
+    }
+
+    function on_mouseout(node) {
+      svg.selectAll('.link')
+        .attr('style', 'stroke: #7f8c8d; opacity: 1');
+    }
+
+    function on_click(n, node) {
+
+      if(_.isNull(node.parents)) {
+
       }
 
-      function rerender(n) {
-        var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
-        var links = parse_links(n.nodes[0], n);
+      _.forEach(node.parents || [], function(p) {
+        n.nodes[p].original_children = _.without(n.nodes[p].original_children, node.id);
+        _.forEach(node.original_children || [], function (c) {
+          n.nodes[p].original_children = n.nodes[p].original_children.concat(c);
+          n.nodes[c].parents = _.without(n.nodes[c].parents, node.id).concat(p);
+        });
+      });
 
-        svg.selectAll('.link')
-          .remove();
+      delete n.nodes[node.id];
+      rerender(n);
+    }
 
-        var link = svg.selectAll('.link')
-          .data(links)
-          .enter().append('path')
-          .attr('class', 'link')
-          .attr('d', diagonal);
+    function rerender(n) {
+      var nodes = cluster.nodes(parse_nodes(n.root, n));
+      var links = parse_links(n.root, n);
 
-        svg.selectAll('.node')
-          .data(nodes, function(d) { return d.id })
-          .transition()
-          .duration(200)
-          .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+      svg.selectAll('.link')
+        .remove();
 
-        svg.selectAll('.node')
-          .filter(function(node) {
-            return !_.has(n.nodes, node.id);
-          })
-          .transition()
-          .duration(100)
-          .style('opacity', 0)
-          .remove()
+      var link = svg.selectAll('.link')
+        .data(links)
+        .enter().append('path')
+        .attr('class', 'link')
+        .attr('d', diagonal);
 
-        svg.selectAll('.link, .node')
-          .sort(function(a, b) {
-            if(_.has(a, 'parents') && !_.has(b, 'parents')) {
-              return 1;
-            }
-            else if(_.has(b, 'parents') && !_.has(a, 'parents')) {
-              return -1;
-            }
-            else {
-              return 0;
-            }
-          })
-      }
+      svg.selectAll('.node')
+        .data(nodes, function(d) { return d.id })
+        .transition()
+        .duration(200)
+        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
 
-      function render(n) {
-        svg.selectAll('.link').remove();
-        svg.selectAll('.node').remove();
+      svg.selectAll('.node')
+        .filter(function(node) {
+          return !_.has(n.nodes, node.id);
+        })
+        .transition()
+        .duration(100)
+        .style('opacity', 0)
+        .remove()
 
-        var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
-        var links = parse_links(n.nodes[0], n);
+      svg.selectAll('.link, .node')
+        .sort(function(a, b) {
+          if(_.has(a, 'parents') && !_.has(b, 'parents')) {
+            return 1;
+          }
+          else if(_.has(b, 'parents') && !_.has(a, 'parents')) {
+            return -1;
+          }
+          else {
+            return 0;
+          }
+        })
+    }
 
-        var link = svg.selectAll('.link')
-          .data(links)
-          .enter().append('path')
-          .attr('class', 'link')
-          .attr('d', diagonal)
+    function render(n) {
+      svg.selectAll('.link').remove();
+      svg.selectAll('.node').remove();
 
-        var node = svg.selectAll('.node')
-          .data(nodes, function(d) { return d.id })
-          .enter().append('g')
-          .attr('class', 'node')
-          .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+      var nodes = cluster.nodes(parse_nodes(n.root, n));
+      var links = parse_links(n.root, n);
 
-        var guys = node.append('rect')
-          .attr('width', 80)
-          .attr('height', 20)
-          .attr('transform', 'translate(-40, -15)')
-          .on('mouseover', on_mouseover)
-          .on('mouseout', on_mouseout)
-          .on('click', on_click);
+      var link = svg.selectAll('.link')
+        .data(links)
+        .enter().append('path')
+        .attr('class', 'link')
+        .attr('d', diagonal)
 
-        node.append('text')
-          .attr('dx', 0)
-          .attr('dy', -1)
-          .attr("pointer-events", "none")
-          .style('text-anchor', 'middle')
-          .text(function(d) { return d.name; });
-      }
+      var node = svg.selectAll('.node')
+        .data(nodes, function(d) { return d.id })
+        .enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
 
-      render(n);
-    });
+      var guys = node.append('rect')
+        .attr('width', 80)
+        .attr('height', 20)
+        .attr('transform', 'translate(-40, -15)')
+        .on('mouseover', _.partial(on_mouseover, n))
+        .on('mouseout', on_mouseout)
+        .on('click', _.partial(on_click, n));
+
+      node.append('text')
+        .attr('dx', 0)
+        .attr('dy', -1)
+        .attr("pointer-events", "none")
+        .style('text-anchor', 'middle')
+        .text(function(d) { return d.name; });
+    }
+
+    d3.json("multi.json", function(error, n) { render(n); });
 
   </script>
 

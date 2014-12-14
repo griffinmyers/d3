@@ -12,5 +12,6 @@
     "9": {"id": "9", "name": "siegriest", "parents": ["0"], "original_children": ["11"]},
     "10": {"id": "10", "name": "cardwell", "parents": ["8"]},
     "11": {"id": "11", "name": "andrada", "parents": ["9"]}
-  }
+  },
+  "root": "0"
 }
