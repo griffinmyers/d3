@@ -19,6 +19,12 @@
         font: 10px monospace;
       }
 
+      .link text {
+        font: 12px monospace;
+        stroke: none;
+        fill: black;
+      }
+
       .link {
         fill: none;
         stroke: #7f8c8d;
@@ -107,7 +113,7 @@
           else {
             return 'opacity: 0.1;';
           }
-        });
+        })
 
       d3.event.stopPropagation();
     }
@@ -186,9 +192,17 @@
 
       var link = svg.selectAll('.link')
         .data(links)
-        .enter().append('path')
+        .enter().append('g')
         .attr('class', 'link')
+
+      link.append('path')
         .attr('d', diagonal)
+
+      link.append('text')
+        .attr('x', function(d) { return (d.source.x + d.target.x) / 2; })
+        .attr('y', function(d) { return (d.source.y + d.target.y) / 2; })
+        .attr('text-anchor', 'middle')
+        .text(function(d) { return n.links[d.source.id + '|' + d.target.id] || '' })
 
       var node = svg.selectAll('.node')
         .data(nodes, function(d) { return d.id })
@@ -196,7 +210,7 @@
         .attr('class', 'node')
         .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
 
-      var guys = node.append('rect')
+      node.append('rect')
         .attr('width', 80)
         .attr('height', 20)
         .attr('transform', 'translate(-40, -15)')
