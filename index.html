@@ -112,39 +112,60 @@
         d3.event.stopPropagation();
       }
 
-      function on_mouseout() {
+      function on_mouseout(node) {
         svg.selectAll('.link')
           .attr('style', 'stroke: #7f8c8d; opacity: 1');
       }
 
-      var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
-      var links = parse_links(n.nodes[0], n);
+      function on_click(node) {
+        _.forEach(node.parents || [], function(p) {
+          n.nodes[p].original_children = _.without(n.nodes[p].original_children, node.id);
+          _.forEach(node.original_children || [], function (c) {
+            n.nodes[p].original_children = n.nodes[p].original_children.concat(c);
+            n.nodes[c].parents = _.without(n.nodes[c].parents, node.id).concat(p);
+          });
+        });
 
-      var link = svg.selectAll('.link')
-        .data(links)
-        .enter().append('path')
-        .attr('class', 'link')
-        .attr('d', diagonal)
+        delete n.nodes[node.id];
+        render(n);
+      }
 
-      var node = svg.selectAll('.node')
-        .data(nodes)
-        .enter().append('g')
-        .attr('class', 'node')
-        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+      function render(n) {
+        svg.selectAll('.link').remove();
+        svg.selectAll('.node').remove();
 
-      var guys = node.append('rect')
-        .attr('width', 80)
-        .attr('height', 20)
-        .attr('transform', 'translate(-40, -15)')
-        .on('mouseover', on_mouseover)
-        .on('mouseout', on_mouseout);
+        var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
+        var links = parse_links(n.nodes[0], n);
 
-      node.append('text')
-        .attr('dx', 0)
-        .attr('dy', -1)
-        .attr("pointer-events", "none")
-        .style('text-anchor', 'middle')
-        .text(function(d) { return d.name; });
+        var link = svg.selectAll('.link')
+          .data(links)
+          .enter().append('path')
+          .attr('class', 'link')
+          .attr('d', diagonal)
+
+        var node = svg.selectAll('.node')
+          .data(nodes)
+          .enter().append('g')
+          .attr('class', 'node')
+          .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+
+        var guys = node.append('rect')
+          .attr('width', 80)
+          .attr('height', 20)
+          .attr('transform', 'translate(-40, -15)')
+          .on('mouseover', on_mouseover)
+          .on('mouseout', on_mouseout)
+          .on('click', on_click);
+
+        node.append('text')
+          .attr('dx', 0)
+          .attr('dy', -1)
+          .attr("pointer-events", "none")
+          .style('text-anchor', 'middle')
+          .text(function(d) { return d.name; });
+      }
+
+      render(n);
     });
 
   </script>
