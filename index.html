@@ -9,8 +9,8 @@
 
     <style type="text/css">
       .node rect {
-        fill: #fff;
-        stroke: steelblue;
+        fill: #ecf0f1;
+        stroke: white;
         stroke-width: 1px;
       }
 
@@ -20,8 +20,8 @@
 
       .link {
         fill: none;
-        stroke: #ccc;
-        stroke-width: 1.5px;
+        stroke: #7f8c8d;
+        stroke-width: 1px;
       }
     </style>
 
@@ -36,7 +36,7 @@
     var height = document.getElementById('nodes').clientHeight;
 
     var cluster = d3.layout.cluster()
-      .size([width - 100, height - 200]);
+      .size([width, height - 70]);
 
     var diagonal = d3.svg.diagonal()
       .projection(function(d) { return [d.x, d.y] });
@@ -82,6 +82,42 @@
         return agg;
       }
 
+      function links_in_root_paths(node, n, agg) {
+        if(_.isUndefined(agg)) {
+          agg = [];
+        }
+
+        if(!_.isNull(node, 'parents')) {
+          return _.flatten(agg.concat(_.map(node.parents, function(p) {
+            return links_in_root_paths(n.nodes[p], n, agg).concat({source_id: p, target_id: node.id});
+          })));
+        }
+
+        return agg;
+      }
+
+      function on_click(node) {
+        svg.selectAll('.link')
+          .attr('style', function(link) {
+            var root_paths = _.indexBy(links_in_root_paths(node, n), function(l) { return l.source_id + '|' + l.target_id} )
+            if(_.has(root_paths, link.source.id + '|' + link.target.id)) {
+              return 'stroke: #2ecc71;';
+            }
+            else {
+              return 'stroke: #ecf0f1;';
+            }
+          });
+
+        d3.event.stopPropagation();
+      }
+
+      function off_click() {
+        svg.selectAll('.link')
+          .attr('style', 'stroke: #7f8c8d;');
+      }
+
+      document.addEventListener("click", off_click);
+
       var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
       var links = parse_links(n.nodes[0], n);
 
@@ -100,7 +136,8 @@
       node.append('rect')
         .attr('width', 100)
         .attr('height', 20)
-        .attr('transform', 'translate(-50, -15)');
+        .attr('transform', 'translate(-50, -15)')
+        .on('click', on_click);
 
       node.append('text')
         .attr('dx', 0)
