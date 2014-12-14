@@ -105,7 +105,7 @@
               return 'stroke: #2ecc71;';
             }
             else {
-              return 'stroke: #ecf0f1;';
+              return 'opacity: 0.1;';
             }
           });
 
@@ -114,7 +114,7 @@
 
       function on_mouseout() {
         svg.selectAll('.link')
-          .attr('style', 'stroke: #7f8c8d;');
+          .attr('style', 'stroke: #7f8c8d; opacity: 1');
       }
 
       var nodes = cluster.nodes(parse_nodes(n.nodes[0], n));
