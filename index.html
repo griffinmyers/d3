@@ -124,11 +124,6 @@
     }
 
     function on_click(n, node) {
-
-      if(_.isNull(node.parents)) {
-
-      }
-
       _.forEach(node.parents || [], function(p) {
         n.nodes[p].original_children = _.without(n.nodes[p].original_children, node.id);
         _.forEach(node.original_children || [], function (c) {
@@ -138,57 +133,14 @@
       });
 
       delete n.nodes[node.id];
-      rerender(n);
-    }
-
-    function rerender(n) {
-      var nodes = cluster.nodes(parse_nodes(n.root, n));
-      var links = parse_links(n.root, n);
-
-      svg.selectAll('.link')
-        .remove();
-
-      var link = svg.selectAll('.link')
-        .data(links)
-        .enter().append('path')
-        .attr('class', 'link')
-        .attr('d', diagonal);
-
-      svg.selectAll('.node')
-        .data(nodes, function(d) { return d.id })
-        .transition()
-        .duration(200)
-        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
-
-      svg.selectAll('.node')
-        .filter(function(node) {
-          return !_.has(n.nodes, node.id);
-        })
-        .transition()
-        .duration(100)
-        .style('opacity', 0)
-        .remove()
-
-      svg.selectAll('.link, .node')
-        .sort(function(a, b) {
-          if(_.has(a, 'parents') && !_.has(b, 'parents')) {
-            return 1;
-          }
-          else if(_.has(b, 'parents') && !_.has(a, 'parents')) {
-            return -1;
-          }
-          else {
-            return 0;
-          }
-        })
+      render(n);
     }
 
     function render(n) {
-      svg.selectAll('.link').remove();
-      svg.selectAll('.node').remove();
-
       var nodes = cluster.nodes(parse_nodes(n.root, n));
       var links = parse_links(n.root, n);
+
+      svg.selectAll('.link').remove();
 
       var link = svg.selectAll('.link')
         .data(links)
@@ -206,11 +158,16 @@
 
       var node = svg.selectAll('.node')
         .data(nodes, function(d) { return d.id })
-        .enter().append('g')
+
+      node.transition()
+        .duration(200)
+        .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
+
+      new_node = node.enter().append('g')
         .attr('class', 'node')
         .attr('transform', function(d) { return 'translate(' + d.x + ', ' + d.y + ')'; });
 
-      node.append('rect')
+      new_node.append('rect')
         .attr('width', 80)
         .attr('height', 20)
         .attr('transform', 'translate(-40, -15)')
@@ -218,12 +175,31 @@
         .on('mouseout', on_mouseout)
         .on('click', _.partial(on_click, n));
 
-      node.append('text')
+      new_node.append('text')
         .attr('dx', 0)
         .attr('dy', -1)
         .attr("pointer-events", "none")
         .style('text-anchor', 'middle')
         .text(function(d) { return d.name; });
+
+      node.exit()
+        .transition()
+        .duration(100)
+        .style('opacity', 0)
+        .remove()
+
+      svg.selectAll('.link, .node')
+        .sort(function(a, b) {
+          if(_.has(a, 'parents') && !_.has(b, 'parents')) {
+            return 1;
+          }
+          else if(_.has(b, 'parents') && !_.has(a, 'parents')) {
+            return -1;
+          }
+          else {
+            return 0;
+          }
+        })
     }
 
     d3.json("multi.json", function(error, n) { render(n); });
