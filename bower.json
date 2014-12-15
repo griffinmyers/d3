@@ -1,0 +1,12 @@
+{
+  "name": "heirarchy",
+  "version": "0.0.1",
+  "authors": [
+    "wmyers <wmyers1@bloomberg.net>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "d3": "~3.5.2",
+    "lodash": "~2.4.1"
+  }
+}
